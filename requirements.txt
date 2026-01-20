@@ -4,3 +4,4 @@ openai~=2.15.0
 aiogram~=3.24.0
 pandas~=2.3.3
 SQLAlchemy~=2.0.45
+asyncpg~=0.31.0

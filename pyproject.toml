@@ -4,5 +4,22 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.10"
 dependencies = [
+    "aiogram>=3.24.0",
     "asyncpg>=0.31.0",
+    "dotenv>=0.9.9",
+    "openai>=2.15.0",
+    "pandas>=2.3.3",
+    "sqlalchemy>=2.0.45",
 ]
+
+[tool.ruff]
+line-length = 101
+fix = true
+
+[tool.ruff.lint]
+extend-select = ["E501", "UP", "D", "I", "ANN001", "ANN201"]
+ignore = ["D100"]
+
+[tool.ruff.format]
+docstring-code-line-length = 100
+#quote-style = "single"

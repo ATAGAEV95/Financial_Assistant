@@ -20,6 +20,12 @@ client = AsyncOpenAI(
 
 
 async def ai_generate(expenses: list) -> str | None:
+    """
+    Асинхронно генерирует текстовый анализ списка трат с использованием модели ИИ.
+
+    Функция формирует промпт на основе переданных трат, отправляет его в модель ИИ
+    через API и возвращает отформатированный ответ. В случае ошибок выводит сообщение
+    в консоль и возвращает None."""
     message = generate_prompt(expenses)
     try:
         completion = await client.chat.completions.create(
@@ -44,6 +50,11 @@ async def ai_generate(expenses: list) -> str | None:
 
 
 def generate_prompt(expenses: list) -> list:
+    """
+    Формирует системный и пользовательский промпты для отправки в модель ИИ.
+
+    Создаёт список сообщений, включающий системное сообщение с промптом и датой,
+    а также пользовательское сообщение со списком трат."""
     today = datetime.now().strftime("%Y-%m-%d")
     message = [
         ChatCompletionSystemMessageParam(

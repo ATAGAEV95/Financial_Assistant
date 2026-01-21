@@ -85,8 +85,8 @@ async def handle_csv_file(message: Message):
         if not result:
             await message.answer("Файл пуст или содержит некорректные данные.")
             return
-        response = await ai_generate(result)
 
+        response = await ai_generate(result)
         await save_user_query(user_id=message.from_user.id, csv_data=result, ai_response=response)
 
         await message.answer(response)

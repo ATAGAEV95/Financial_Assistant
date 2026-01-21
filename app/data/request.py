@@ -1,9 +1,13 @@
+import asyncio
 import json
 from datetime import datetime
 
 from sqlalchemy import insert, select
 
 from app.data.models import UserQuery, Users, async_session
+
+# Убедитесь, что DB_TIMEOUT определён
+DB_TIMEOUT = 10  # секунд
 
 
 async def get_user_by_id(user_id: int):
@@ -23,8 +27,11 @@ async def get_user_by_id(user_id: int):
     try:
         async with async_session() as session:
             query = select(Users).where(Users.user_id == user_id)
-            result = await session.execute(query)
+            result = await asyncio.wait_for(session.execute(query), timeout=DB_TIMEOUT)
             return result.scalar_one_or_none()
+    except asyncio.TimeoutError:
+        print(f"Таймаут при получении пользователя с user_id={user_id}")
+        return None
     except Exception as e:
         print(f"Ошибка получения пользователя: {e}")
         return None
@@ -45,7 +52,9 @@ async def add_user(user_id: int, username: str):
         async with async_session() as session:
             user = Users(user_id=user_id, username=username)
             session.add(user)
-            await session.commit()
+            await asyncio.wait_for(session.commit(), timeout=DB_TIMEOUT)
+    except asyncio.TimeoutError:
+        print(f"Таймаут при добавлении пользователя с user_id={user_id}")
     except Exception as e:
         print(f"Ошибка добавления пользователя: {e}")
 
@@ -61,13 +70,15 @@ async def save_user_query(user_id: int, csv_data: list, ai_response: str):
     """
     try:
         async with async_session() as session:
-            query = insert(UserQuery).values(
+            user_query = UserQuery(
                 user_id=user_id,
                 csv_data=json.dumps(csv_data, ensure_ascii=False),
                 ai_response=ai_response,
                 created_at=datetime.now(),
             )
-            await session.execute(query)
-            await session.commit()
+            session.add(user_query)
+            await asyncio.wait_for(session.commit(), timeout=DB_TIMEOUT)
+    except asyncio.TimeoutError:
+        print(f"Таймаут при сохранении запроса пользователя с user_id={user_id}")
     except Exception as e:
         print(f"Ошибка сохранения запроса пользователя: {e}")

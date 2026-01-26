@@ -19,7 +19,7 @@ client = AsyncOpenAI(
 )
 
 
-async def ai_generate(expenses: list) -> str | None:
+async def ai_generate(expenses: tuple) -> str | None:
     """Асинхронно генерирует текстовый анализ списка трат с использованием модели ИИ.
 
     Функция формирует промпт на основе переданных трат, отправляет его в модель ИИ
@@ -49,7 +49,7 @@ async def ai_generate(expenses: list) -> str | None:
         print(f"Неожиданная ошибка: {e}")
 
 
-def generate_prompt(expenses: list) -> list:
+def generate_prompt(expenses: tuple) -> list:
     """Формирует системный и пользовательский промпты для отправки в модель ИИ.
 
     Создаёт список сообщений, включающий системное сообщение с промптом и датой,

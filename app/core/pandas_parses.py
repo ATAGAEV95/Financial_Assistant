@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 
 
-def csv_to_dict(csv_file) -> list | None:
+def csv_to_dict(csv_file):
     """Преобразует CSV-файл в список словарей с определённой структурой.
 
     Функция читает CSV-файл, извлекает столбцы 'date', 'category' и 'amount',
@@ -19,7 +19,29 @@ def csv_to_dict(csv_file) -> list | None:
         df["date"] = df["date"].dt.strftime("%Y-%m-%d")
         df["amount"] = df["amount"].astype(str).str.replace(r"[^\d.]", "", regex=True)
         df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
+        df = df[df["category"] != "Зарплата"]
         dict_result = df.to_dict(orient="records")
-        return dict_result
+        category_sum = df.groupby("category")["amount"].sum()
+
+        category_sum = category_sum.sort_values(ascending=False)
+        report_lines = []
+        for category, amount in category_sum.items():
+            report_lines.append(f"{category}: {amount}")
+
+        category_report = "\n".join(report_lines)
+        return dict_result, category_report
     except Exception as e:
         print(f"Ошибка обработки CSV файла: {e}")
+
+
+# import asyncio
+# from app.core.generate import ai_generate
+# async def main():
+#     dct = csv_to_dict("../../data.csv")
+#     print(dct)
+#     print(type(dct))
+#     response = await ai_generate(dct)
+#     print(response)
+#
+#
+# asyncio.run(main())

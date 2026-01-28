@@ -9,6 +9,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "openai>=2.15.0",
     "pandas>=2.3.3",
+    "pytz>=2025.2",
     "sqlalchemy>=2.0.45",
 ]
 

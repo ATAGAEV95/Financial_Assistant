@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import pytz
 
 from dotenv import load_dotenv
 from openai import APIConnectionError, APIError, AsyncOpenAI, BadRequestError
@@ -55,7 +56,8 @@ def generate_prompt(expenses: tuple) -> list:
     Создаёт список сообщений, включающий системное сообщение с промптом и датой,
     а также пользовательское сообщение со списком трат.
     """
-    today = datetime.now().strftime("%Y-%m-%d")
+    moscow_tz = pytz.timezone("Europe/Moscow")
+    today = datetime.now(moscow_tz).strftime("%Y-%m-%d")
     message = [
         ChatCompletionSystemMessageParam(
             role="system", content=SYSTEM_PROMPT + f"Дата на сегодня: {today}"

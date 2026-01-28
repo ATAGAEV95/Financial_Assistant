@@ -335,6 +335,7 @@ dependencies = [
     { name = "dotenv" },
     { name = "openai" },
     { name = "pandas" },
+    { name = "pytz" },
     { name = "sqlalchemy" },
 ]
 
@@ -345,6 +346,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "openai", specifier = ">=2.15.0" },
     { name = "pandas", specifier = ">=2.3.3" },
+    { name = "pytz", specifier = ">=2025.2" },
     { name = "sqlalchemy", specifier = ">=2.0.45" },
 ]
 

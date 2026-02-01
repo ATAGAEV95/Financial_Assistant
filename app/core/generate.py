@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
-import pytz
 
+import pytz
 from dotenv import load_dotenv
 from openai import APIConnectionError, APIError, AsyncOpenAI, BadRequestError
 from openai.types.chat import ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam

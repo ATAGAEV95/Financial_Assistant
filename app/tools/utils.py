@@ -18,7 +18,7 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 
-def clean_text(text):
+def clean_text(text: str) -> str:
     """Очищает текст от markdown-разметки.
 
     Удаляет из строки все вхождения следующих символов разметки:

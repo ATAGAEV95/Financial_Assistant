@@ -1,15 +1,12 @@
 name: Deploy to Local Server
 
 on:
-  # Эта строчка оставляет кнопку "Run workflow" в разделе Actions
   workflow_dispatch:
-  # Если раскомментируешь строчки ниже, деплой будет идти еще и автоматически при git push:
-  # push:
-  #   branches: [ "main" ]
+  push:
+    branches: [ "main" ]
 
 jobs:
   build_deploy:
-    # Эта строчка говорит GitHub'у отправить задачу на твой домашний ПК
     runs-on: self-hosted
 
     steps:

@@ -1,40 +1,166 @@
+from calendar import monthrange
 from datetime import datetime
 from typing import Any
 
 import pandas as pd
 
+MONTH_NAMES = {
+    1: "Январь",
+    2: "Февраль",
+    3: "Март",
+    4: "Апрель",
+    5: "Май",
+    6: "Июнь",
+    7: "Июль",
+    8: "Август",
+    9: "Сентябрь",
+    10: "Октябрь",
+    11: "Ноябрь",
+    12: "Декабрь",
+}
 
-def csv_to_dict(csv_file: Any) -> tuple:
-    """Преобразует CSV-файл в список словарей с определённой структурой.
+RESERVE_CATEGORIES = {"Машина", "Лекарство", "Подарки"}
+RESERVE_LIMIT = 10_000
+MAIN_BUDGET = 30_000
 
-    Функция читает CSV-файл, извлекает столбцы 'date', 'category' и 'amount',
-    обрабатывает данные: приводит даты к формату YYYY-MM-DD, фильтрует записи,
-    оставляя только те, дата которых не раньше 1-го числа текущего месяца,
-    очищает и преобразует суммы к числовому типу.
-    """
+
+def csv_to_dict(csv_file: Any, current_date: datetime) -> str:
+    """Преобразует CSV-файл в текстовый отчёт о расходах за текущий месяц."""
     try:
         df = pd.read_csv(csv_file, encoding="utf-8", delimiter=",")
         df = df[["date", "category", "amount"]]
         df["date"] = pd.to_datetime(df["date"], dayfirst=True)
 
-        current_date = datetime.now()
-        filter_date = current_date.replace(day=1)
+        filter_date = current_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
         df = df[df["date"].dt.normalize() >= pd.Timestamp(filter_date.date())]
-        df["date"] = df["date"].dt.strftime("%Y-%m-%d")
         df["amount"] = df["amount"].astype(str).str.replace(r"[^\d.]", "", regex=True)
         df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
         df = df[df["category"] != "Зарплата"]
-        dict_result = df.to_dict(orient="records")
-        category_sum = df.groupby("category")["amount"].sum()
-        category_sum = category_sum.sort_values(ascending=False)
-        total_amount = df["amount"].sum()
+        df = df.dropna(subset=["amount"])
 
-        report_lines = []
+        if df.empty:
+            return "Нет данных о расходах за текущий месяц."
+
+        last_date = df["date"].max()
+        day = last_date.day
+        month_name_gen = _month_genitive(last_date.month)
+        year = last_date.year
+        date_str = f"{day} {month_name_gen} {year} года"
+
+        month_name = MONTH_NAMES.get(last_date.month, str(last_date.month))
+
+        total_amount = int(df["amount"].sum())
+
+        category_sum = df.groupby("category")["amount"].sum().sort_values(ascending=False)
+
+        reserve_spent = int(df[df["category"].isin(RESERVE_CATEGORIES)]["amount"].sum())
+        main_spent = total_amount - reserve_spent
+        main_left = MAIN_BUDGET - main_spent
+
+        reserve_diff = RESERVE_LIMIT - reserve_spent
+        reserve_spent_fmt = f"{reserve_spent:,}".replace(",", " ")
+        if reserve_diff >= 0:
+            reserve_diff_fmt = f"{reserve_diff:,}".replace(",", " ")
+            reserve_line = (
+                f"Из резерва (10 000 руб.) на категории Машина, Лекарство и Подарки потрачено: "
+                f"{reserve_spent_fmt} руб. Остаток резерва: {reserve_diff_fmt} руб."
+            )
+        else:
+            reserve_over_fmt = f"{abs(reserve_diff):,}".replace(",", " ")
+            reserve_line = (
+                f"Из резерва (10 000 руб.) на категории Машина, Лекарство и Подарки потрачено: "
+                f"{reserve_spent_fmt} руб. Резерв полностью исчерпан"
+                f" и превышен на {reserve_over_fmt} руб."
+            )
+
+        days_in_month = monthrange(current_date.year, current_date.month)[1]
+        days_left = days_in_month - current_date.day + 1
+
+        days_passed = current_date.day
+        avg_daily_actual = round(main_spent / days_passed)
+        recommended_daily = round(max(0, main_left) / days_left) if days_left > 0 else 0
+        recommended_daily_capped = min(recommended_daily, 1000)
+
+        total_amount_fmt = f"{total_amount:,}".replace(",", " ")
+
+        lines = [
+            f"Привет! Проанализировал твои траты по состоянию на {date_str}.",
+            f"Сейчас идет финансовый месяц: {month_name}.",
+            "",
+            f"Общие расходы с начала периода: {total_amount_fmt} рублей.",
+            "",
+            "Основные категории трат:",
+        ]
+
         for category, amount in category_sum.items():
-            report_lines.append(f"{category}: {amount}")
+            amount_fmt = f"{int(amount):,}".replace(",", " ")
+            lines.append(f"{category}: {amount_fmt} руб.")
 
-        category_report = "\n".join(report_lines)
-        return dict_result, category_report, f"Сумма: {int(total_amount)}"
+        projected_total = round(main_spent / days_passed * days_in_month)
+        projected_total_fmt = f"{projected_total:,}".replace(",", " ")
+
+        recommended_daily_fmt = f"{recommended_daily:,}".replace(",", " ")
+        recommended_daily_capped_fmt = f"{recommended_daily_capped:,}".replace(",", " ")
+        avg_daily_actual_fmt = f"{avg_daily_actual:,}".replace(",", " ")
+
+        if recommended_daily > 1000:
+            recommendation_line = (
+                "Чтобы уложиться в плановый бюджет (30 000 руб.),"
+                " тебе теперь можно тратить в среднем не более 1 000 рублей в день"
+                f" (расчётный лимит составил бы {recommended_daily_fmt} руб.,"
+                " но мы ограничиваем его 1 000 руб.)."
+            )
+        else:
+            recommendation_line = (
+                "Чтобы уложиться в плановый бюджет (30 000 руб.),"
+                " тебе теперь можно тратить в среднем"
+                f" {recommended_daily_capped_fmt} рублей в день."
+            )
+
+        main_spent_fmt = f"{main_spent:,}".replace(",", " ")
+        main_left_fmt = f"{main_left:,}".replace(",", " ")
+
+        lines += [
+            "",
+            "Разделение по бюджетам:",
+            reserve_line,
+            "Из основного бюджета (30 000 руб.) на регулярные нужды потрачено:"
+            f" {main_spent_fmt} руб.",
+            f"Остаток основного бюджета: {main_left_fmt} руб.",
+            f"До конца периода осталось {days_left} дней (включая сегодня).",
+            "",
+            "Рекомендация по тратам:",
+            recommendation_line,
+            f"Пока что твои средние фактические дневные траты составляют"
+            f" {avg_daily_actual_fmt} рублей"
+            f" (из расчета за {days_passed} прошедших дней).",
+            f"Если ты продолжишь тратить в таком же ритме, то к концу"
+            f" {month_name_gen} общая сумма расходов составит"
+            f" около {projected_total_fmt} рублей.",
+        ]
+
+        return "\n".join(lines)
+
     except Exception as e:
         print(f"Ошибка обработки CSV файла: {e}")
+        return f"Ошибка обработки файла: {e}"
+
+
+def _month_genitive(month: int) -> str:
+    """Возвращает название месяца в родительном падеже."""
+    genitive = {
+        1: "января",
+        2: "февраля",
+        3: "марта",
+        4: "апреля",
+        5: "мая",
+        6: "июня",
+        7: "июля",
+        8: "августа",
+        9: "сентября",
+        10: "октября",
+        11: "ноября",
+        12: "декабря",
+    }
+    return genitive.get(month, str(month))

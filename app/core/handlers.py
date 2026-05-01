@@ -1,12 +1,13 @@
+from datetime import datetime
+
 from aiogram import Router
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
-from app.core.generate import ai_generate
 from app.core.pandas_parses import csv_to_dict
-from app.data.request import add_user, get_user_by_id, save_user_query
+from app.data.request import add_user, get_user_by_id
 from app.tools.utils import hash_password
 
 router = Router()
@@ -74,25 +75,18 @@ async def password_handler(message: Message, state: FSMContext) -> None:
 
 @router.message(lambda message: message.document and message.document.file_name.endswith(".csv"))
 async def handle_csv_file(message: Message) -> None:
-    """Обработчик CSV-файлов.
-
-    Args:
-        message (Message): Сообщение с прикрепленным CSV-файлом.
-
-    """
+    """Обработчик CSV-файлов."""
     document = message.document
     file = await message.bot.download(document.file_id)
+    current_date = datetime.now()
 
     try:
-        result = csv_to_dict(file)
-        if not result:
+        report = csv_to_dict(file, current_date)
+        if not report:
             await message.answer("Файл пуст или содержит некорректные данные.")
             return
 
-        response = await ai_generate(result)
-        await save_user_query(user_id=message.from_user.id, csv_data=result, ai_response=response)
-
-        await message.answer(response)
+        await message.answer(report)
     except Exception as e:
         await message.answer(f"Ошибка обработки файла: {str(e)}")
 

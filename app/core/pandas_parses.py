@@ -140,6 +140,16 @@ def csv_to_dict(csv_file: Any, current_date: datetime) -> str:
             f" около {projected_total_fmt} рублей.",
         ]
 
+        if avg_daily_actual > 1000:
+            overspend = avg_daily_actual - 1000
+            zero_days = -(-overspend * days_passed // 1000)
+            lines.append(
+                f"Так как текущий дневной расход превышает целевой"
+                f" (около 1 000 руб. в день на основной бюджет)"
+                f" более чем на {overspend} рублей,"
+                f" тебе необходимо {zero_days} дней без трат."
+            )
+
         return "\n".join(lines)
 
     except Exception as e:

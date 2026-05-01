@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 
 from aiogram import Bot, Dispatcher
@@ -17,6 +18,7 @@ async def main() -> None:
 
     Также запускает функцию init_models.
     """
+    logging.basicConfig(level=logging.INFO)
     bot = Bot(token=TG_TOKEN)
     dp = Dispatcher()
     dp.include_router(router)
